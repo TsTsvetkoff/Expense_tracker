@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Expense Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+            /* Add this CSS to style your form and chart */
+            form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+        }
+            form div {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+            input[type="radio"] + label {
+                font-size: 1.3em; /* Adjust as needed */
+                font-weight: bold;
+            }
+
+            input[type="submit"] {
+                font-size: 1.1em; /* Adjust as needed */
+                padding: 10px 20px; /* Adjust as needed */
+}
+            /* Style for the chart */
+            #myChart {
+                display: block;
+                width: 300px; /* Adjust as needed */
+                height: 300px; /* Adjust as needed */
+                margin: 0 auto; /* Centers the chart */
+            }
+            /* Style for the input fields */
+            input[type="number"], input[type="text"] {
+                font-size: 1.5em; /* Adjust as needed */
+                padding: 10px; /* Adjust as needed */
+            }
+
+            table {
+                margin: 60px auto; /* Adds 50px of space above the table */
+                width: 60%; /* Adjust as needed */
+                font-size: 1.2em; /* Adjust as needed */
+                border-collapse: collapse; /* Ensures the borders between cells are shared */
+            }
+
+            /* Add borders to the table cells */
+            th, td {
+                border: 1px solid black;
+                padding: 10px;
+            }
+            #totalExpenses {
+                text-align: center;
+                font-size: 2em;
+                padding: 20px;
+            }
+    </style>
+</head>
+<body>
+    <canvas id="myChart"></canvas>
+    <form method="POST">
+        <br>
+        <br>
+    <div>
+        <input type="radio" id="cafe" name="category" value="Кафе / Ресторант" required>
+        <label for="cafe">Кафе / Ресторант</label>
+        <input type="radio" id="shop" name="category" value="Магазин / Табаче" required>
+        <label for="shop">Магазин / Табаче</label><br>
+        <input type="radio" id="kids" name="category" value="Деца" required>
+        <label for="kids">Деца</label><br>
+        <input type="radio" id="bills" name="category" value="Сметки" required>
+        <label for="bills">Сметки</label><br>
+        <input type="radio" id="other" name="category" value="Други" required>
+        <label for="other">Други</label><br>
+    </div>
+    <br>
+    <br>
+    <input type="number" id="amount" name="amount" placeholder="Amount" step="0.01" required>
+    <input type="text" id="comment" name="comment" placeholder="Comment">
+    <br>
+    <br>
+    <input type="submit" value="Submit">
+    <br>
+    <br>
+    <div id="totalExpenses"></div>
+    </form>
+
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Comment</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody id="expenseTable">
+            <!-- Rows will be added here by JavaScript -->
+        </tbody>
+    </table>
+    <script>
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'pie',  // Change this from 'line' to 'pie'
+        data: {
+            labels: [], // Fill this with the categories from your data
+            datasets: [{
+                label: 'Expenses',
+                data: [], // Fill this with the expense amounts from your data
+                backgroundColor: [  // Add colors for each category
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                ]
+            }]
+        }
+    });
+
+    // Add this function to fetch the data from the server and update the chart
+    function updateChart() {
+        fetch('/data')
+            .then(response => response.json())
+            .then(data => {
+                myChart.data.labels = data.labels; // Update the labels with the categories
+                myChart.data.datasets[0].data = data.amounts; // Update the data with the amounts
+                myChart.update();
+            });
+    }
+
+    // Call the function to update the chart when the page loads
+    updateChart();
+// Add this function to fetch the data from the server and update the table
+    function updateTable() {
+        fetch('/expenses')  // Change this from '/' to '/expenses'
+            .then(response => response.json())
+            .then(data => {
+                const table = document.getElementById('expenseTable');
+                // Clear the table
+                table.innerHTML = '';
+                // Add a new row for each entry
+                data.forEach(expense => {
+                    const row = table.insertRow();
+                    row.insertCell().textContent = expense.date;
+                    row.insertCell().textContent = expense.category;
+                    row.insertCell().textContent = expense.comment;
+                    row.insertCell().textContent = expense.amount;
+                });
+            });
+    }
+
+    // Call the function to update the table when the page loads
+    updateTable();
+
+    function updateTotalExpenses() {
+    fetch('/total_expenses')
+        .then(response => response.json())
+        .then(data => {
+            const totalExpensesDiv = document.getElementById('totalExpenses');
+            totalExpensesDiv.textContent = `Total Expenses for Today: ${data.total}`;
+
+            // Add this conditional to change the color based on the total
+            if (data.total <= 100) {
+                totalExpensesDiv.style.color = 'green';
+            } else {
+                totalExpensesDiv.style.color = 'red';
+            }
+        });
+}
+
+    // Call the function to update the total expenses when the page loads
+    updateTotalExpenses();
+    </script>
+</body>
+</html>
