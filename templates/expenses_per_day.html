@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenses per Day</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        /* Styling for high/low total */
+        .high-total {
+            color: red;
+        }
+        .low-total {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Daily Expenses Summary</h1>
+    <table id="expensesTable">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Total of the Day</th>
+                <th>Кафе / Ресторант</th>
+                <th>Магазин / Табаче</th>
+                <th>Деца</th>
+                <th>Сметки</th>
+                <th>Други</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dates are already ordered correctly by the query -->
+            {% for expense in expenses_per_day %}
+            <tr>
+                <td>{{ expense.date }}</td>  <!-- Date -->
+
+                <!-- Apply color based on the total amount -->
+                <td class="{{ 'high-total' if expense.total > 100 else 'low-total' }}">
+                    {{ expense.total }}
+                </td>
+
+                <td>{{ expense.cafe }}</td>
+                <td>{{ expense.shop }}</td>
+                <td>{{ expense.kids }}</td>
+                <td>{{ expense.bills }}</td>
+                <td>{{ expense.others }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

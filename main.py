@@ -58,6 +58,27 @@ def total_expenses():
     return jsonify({'total': total or 0})
 
 
+@app.route('/expenses_per_day')
+def expenses_per_day():
+    expenses_per_day = db.session.query(
+        func.date(Expense.date).label('date'),
+        func.sum(Expense.amount).label('total'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Кафе / Ресторант'), 0).label('cafe'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Магазин / Табаче'), 0).label('shop'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Деца'), 0).label('kids'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Сметки'), 0).label('bills'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Други'), 0).label('others')
+    ).group_by(func.date(Expense.date)).order_by(Expense.date.desc()).all()
+
+    return render_template('expenses_per_day.html', expenses_per_day=expenses_per_day)
+
+
+@app.route('/expenses_per_month')
+def expenses_per_month():
+    expenses_per_month = db.session.query(Expense.category, func.strftime('%Y-%m', Expense.date), func.sum(Expense.amount)).group_by(Expense.category, func.strftime('%Y-%m', Expense.date)).all()
+    return render_template('expenses_per_month.html', expenses_per_month=expenses_per_month)
+
+
 if __name__ == "__main__":
     with app.app_context():
         if not os.path.exists('expenses.db'):
