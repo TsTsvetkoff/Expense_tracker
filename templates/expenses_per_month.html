@@ -2,9 +2,106 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenses per Month</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        /* Styling for high/low total */
+        .high-total {
+            color: red;
+        }
+        .low-total {
+            color: green;
+        }
+        #expensesChart {
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        #myChart {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
 </head>
 <body>
 
+    <!-- Back Button -->
+    <button onclick="window.location.href='/'">Back</button>
+
+
+    <div id="expensesChart">
+        <canvas id="myChart"></canvas>
+    </div>
+    <h1>Monthly Expenses Summary</h1>
+    <table id="expensesTable">
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th>Total of the Month</th>
+                <th>Кафе / Ресторант</th>
+                <th>Магазин / Табаче</th>
+                <th>Деца</th>
+                <th>Сметки</th>
+                <th>Други</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses_per_month %}
+            <tr>
+                <td>{{ expense.month }}</td>
+                <td class="{{ 'high-total' if expense.total > 100 else 'low-total' }}">{{ expense.total }}</td>
+                <td>{{ expense.cafe }}</td>
+                <td>{{ expense.shop }}</td>
+                <td>{{ expense.kids }}</td>
+                <td>{{ expense.bills }}</td>
+                <td>{{ expense.others }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ months|tojson }},
+                datasets: [{
+                    label: 'Total Expenses',
+                    data: {{ totals|tojson }},
+                    borderColor: 'blue',
+                    backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                    fill: true
+                },
+                {
+                    label: 'Monthly Target (3400)',
+                    data: Array({{ totals|length }}).fill(3400),  // Target line
+                    borderColor: 'red',
+                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                    fill: false,
+                    borderDash: [5, 5]  // Dashed line for target
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

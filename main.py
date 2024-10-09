@@ -80,12 +80,27 @@ def expenses_per_day():
     return render_template('expenses_per_day.html', expenses_per_day=expenses_per_day, dates=dates, totals=totals)
 
 
-
-
 @app.route('/expenses_per_month')
 def expenses_per_month():
-    expenses_per_month = db.session.query(Expense.category, func.strftime('%Y-%m', Expense.date), func.sum(Expense.amount)).group_by(Expense.category, func.strftime('%Y-%m', Expense.date)).all()
-    return render_template('expenses_per_month.html', expenses_per_month=expenses_per_month)
+    expenses_per_month = db.session.query(
+        func.strftime("%Y-%m", Expense.date).label('month'),  # Group by month and year
+        func.sum(Expense.amount).label('total'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Кафе / Ресторант'), 0).label('cafe'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Магазин / Табаче'), 0).label('shop'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Деца'), 0).label('kids'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Сметки'), 0).label('bills'),
+        func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Други'), 0).label('others')
+    ).group_by(func.strftime("%Y-%m", Expense.date)).order_by(func.strftime("%Y-%m", Expense.date).desc()).all()
+
+    if not expenses_per_month:
+        months = []
+        totals = []
+    else:
+        months = [expense.month for expense in expenses_per_month]
+        totals = [expense.total if expense.total else 0 for expense in expenses_per_month]
+
+    return render_template('expenses_per_month.html', expenses_per_month=expenses_per_month, months=months, totals=totals)
+
 
 
 if __name__ == "__main__":
