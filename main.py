@@ -61,16 +61,25 @@ def total_expenses():
 @app.route('/expenses_per_day')
 def expenses_per_day():
     expenses_per_day = db.session.query(
-        func.date(Expense.date).label('date'),
+        func.date(Expense.date).label('date'),  # Group by date
         func.sum(Expense.amount).label('total'),
         func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Кафе / Ресторант'), 0).label('cafe'),
         func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Магазин / Табаче'), 0).label('shop'),
         func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Деца'), 0).label('kids'),
         func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Сметки'), 0).label('bills'),
         func.coalesce(func.sum(Expense.amount).filter(Expense.category == 'Други'), 0).label('others')
-    ).group_by(func.date(Expense.date)).order_by(Expense.date.desc()).all()
+    ).group_by(func.date(Expense.date)).order_by(func.date(Expense.date).desc()).all()
 
-    return render_template('expenses_per_day.html', expenses_per_day=expenses_per_day)
+    if not expenses_per_day:
+        dates = []
+        totals = []
+    else:
+        dates = [expense.date for expense in expenses_per_day]
+        totals = [expense.total if expense.total else 0 for expense in expenses_per_day]
+
+    return render_template('expenses_per_day.html', expenses_per_day=expenses_per_day, dates=dates, totals=totals)
+
+
 
 
 @app.route('/expenses_per_month')

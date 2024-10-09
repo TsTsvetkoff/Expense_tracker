@@ -23,10 +23,29 @@
         .low-total {
             color: green;
         }
+        #expensesChart {
+            max-width: 800px;  /* Increased max width */
+            margin: 20px auto; /* Center the chart */
+        }
+        #myChart {
+            width: 100%;      /* 100% of the container's width */
+            height: 400px;    /* Increased fixed height */
+        }
     </style>
 </head>
 <body>
+
+    <!-- Back Button -->
+    <button onclick="window.location.href='/'">Back</button>
+
+
+
+    <div id="expensesChart">
+        <canvas id="myChart"></canvas>  <!-- Ensure the correct canvas is targeted -->
+    </div>
+
     <h1>Daily Expenses Summary</h1>
+
     <table id="expensesTable">
         <thead>
             <tr>
@@ -59,5 +78,39 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            var ctx = document.getElementById('myChart').getContext('2d');  // Correct canvas ID
+            var chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ dates|tojson }},
+                    datasets: [{
+                        label: 'Total Expenses',
+                        data: {{ totals|tojson }},
+                        borderColor: 'blue',
+                        backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                        fill: true
+                    },
+                    {
+                        label: 'Daily Target (100)',
+                        data: Array({{ totals|length }}).fill(100),  // Target line
+                        borderColor: 'red',
+                        backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                        fill: false,
+                        borderDash: [5, 5]  // Dashed line for target
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        </script>
 </body>
 </html>
