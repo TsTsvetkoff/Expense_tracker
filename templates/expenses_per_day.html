@@ -23,13 +23,22 @@
         .low-total {
             color: green;
         }
-        #expensesChart {
-            max-width: 800px;  /* Increased max width */
-            margin: 20px auto; /* Center the chart */
+                #expensesChart {
+            max-width: 100%;  /* Full width on mobile */
+            padding: 20px;
+            margin: 0 auto;  /* Center the chart */
         }
+
         #myChart {
-            width: 100%;      /* 100% of the container's width */
-            height: 400px;    /* Increased fixed height */
+            width: 100%;  /* Make chart 100% of container's width */
+            height: 60vh;  /* Use viewport height for responsive chart sizing */
+            max-height: 400px; /* Limit the maximum height on larger screens */
+        }
+
+        @media (max-width: 768px) {
+            #myChart {
+                height: 50vh;  /* Adjust height for smaller devices */
+            }
         }
     </style>
 </head>
@@ -41,7 +50,7 @@
 
 
     <div id="expensesChart">
-        <canvas id="myChart"></canvas>  <!-- Ensure the correct canvas is targeted -->
+    <canvas id="myChart"></canvas>
     </div>
 
     <h1>Daily Expenses Summary</h1>
@@ -80,71 +89,81 @@
     </table>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            var ctx = document.getElementById('myChart').getContext('2d');
+            document.addEventListener("DOMContentLoaded", function() {
+                var ctx = document.getElementById('myChart').getContext('2d');
 
-            var predictedValue = {{ predicted_value }};  // Predicted value for tomorrow
-            var dates = {{ dates|tojson }};  // Current dates from DB
-            var totals = {{ totals|tojson }};  // Actual totals from DB
+                var predictedValue = {{ predicted_value }};  // Predicted value for tomorrow
+                var dates = {{ dates|tojson }};  // Current dates from DB
+                var totals = {{ totals|tojson }};  // Actual totals from DB
 
-            var chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: {{ dates|tojson }},
-                    datasets: [{
-                        label: 'Total Expenses',
-                        data: {{ totals|tojson }},
-                        borderColor: 'blue',
-                        backgroundColor: 'rgba(0, 0, 255, 0.1)',
-                        fill: true
-                    },
-                    {
-                        label: 'Daily Target (100)',
-                        data: Array({{ totals|length }}).fill(100),  // Target line
-                        borderColor: 'red',
-                        backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                        fill: false,
-                        borderDash: [5, 5]  // Dashed line for target
-                    },
+                var chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: {{ dates|tojson }},
+                        datasets: [{
+                            label: 'Total Expenses',
+                            data: {{ totals|tojson }},
+                            borderColor: 'blue',
+                            backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                            fill: true
+                        },
+                        {
+                            label: 'Daily Target (100)',
+                            data: Array({{ totals|length }}).fill(100),  // Target line
+                            borderColor: 'red',
+                            backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                            fill: false,
+                            borderDash: [5, 5]  // Dashed line for target
+                        },
 
-                    {
-                        label: 'AI Prediction for Tomorrow',
-                        data: Array({{ dates|tojson }}).fill(predictedValue),  // Target line,  // Null until "Tomorrow", then show predicted value
-                        borderColor: 'green',
-                        backgroundColor: 'rgba(0, 255, 0, 0.5)',  // Slightly transparent green
-                        fill: false,
-                        pointBackgroundColor: 'green',  // Green dot
-                        pointBorderColor: 'green',  // Green border
-                        pointRadius: 6,  // Larger dot size for emphasis
-                        showLine: false  // Only show the point, not a line
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                        {
+                            label: 'AI Prediction for Tomorrow',
+                            data: Array({{ dates|tojson }}).fill(predictedValue),  // Null until "Tomorrow", then show predicted value
+                            borderColor: 'green',
+                            backgroundColor: 'rgba(0, 255, 0, 0.5)',  // Slightly transparent green
+                            fill: false,
+                            pointBackgroundColor: 'green',  // Green dot
+                            pointBorderColor: 'green',  // Green border
+                            pointRadius: 6,  // Larger dot size for emphasis
+                            showLine: false  // Only show the point, not a line
+                        }]
                     },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            labels: {
-                                usePointStyle: true  // Use point style for better visibility
+                    options: {
+                        responsive: true,  // Enable responsive behavior
+                        maintainAspectRatio: false,  // Disable aspect ratio to manage chart height on mobile
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) { return value; }, // Display numbers in better format
+                                }
                             }
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    if (context.dataset.label === 'AI Prediction for Tomorrow') {
-                                        return 'Predicted: ' + context.raw;
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: {
+                                    usePointStyle: true,  // Use point style for better visibility
+                                    font: {
+                                        size: 12  // Adjust font size for mobile
                                     }
-                                    return context.dataset.label + ': ' + context.raw;
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        if (context.dataset.label === 'AI Prediction for Tomorrow') {
+                                            return 'Predicted: ' + context.raw;
+                                        }
+                                        return context.dataset.label + ': ' + context.raw;
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                });
             });
         </script>
 </body>
