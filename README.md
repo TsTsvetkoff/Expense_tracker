@@ -1,8 +1,10 @@
 # Expense Tracker
 
 This project is a simple expense tracker built with Python and Flask. 
-It allows users to input their expenses and categorize them. The expenses are stored in a SQLite database and can be viewed in a table format on the web page.
-The project also includes a pie chart visualization of expenses by category.
+It allows users to input their expenses and categorize them. 
+The expenses are stored in a SQLite database and can be viewed in a table format on the web page. 
+The project also includes a pie chart visualization of expenses by category and an AI-powered prediction feature for future expenses.
+
 
 ## Technologies Used
 
@@ -10,6 +12,7 @@ The project also includes a pie chart visualization of expenses by category.
 - Flask
 - SQLAlchemy
 - HTML/CSS/JavaScript
+- scikit-learn - LinearRegression
 
 ## Features
 
@@ -17,14 +20,22 @@ The project also includes a pie chart visualization of expenses by category.
 - View all expenses in a table format.
 - Visualize expenses by category in a pie chart.
 - Calculate and display total expenses for the current day.
+- AI-powered prediction for next day's expenses.
 
 ## Setup
 
 1. Clone the repository to your local machine.
 2. Install the required Python packages using pip:
+Note
+Create a new virtual environment using the venv module in Python.
+```bash
+python3 -m venv venv
+```
+MacOS// Linux - source venv/bin/activate
+Windows - .\venv\Scripts\activate
 
 ```bash
-pip install flask flask_sqlalchemy
+pip install -r requirements.txt
 ```
 
 3. Run the application:
@@ -44,5 +55,4 @@ python main.py
 ## Future Improvements
 
 - Add user authentication to allow multiple users to track their expenses separately.
-- Add more detailed reporting features, such as viewing expenses by month or year.
 - Improve the UI/UX design of the application.
