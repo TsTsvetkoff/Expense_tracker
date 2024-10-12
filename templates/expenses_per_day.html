@@ -81,7 +81,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            var ctx = document.getElementById('myChart').getContext('2d');  // Correct canvas ID
+            var ctx = document.getElementById('myChart').getContext('2d');
+
+            var predictedValue = {{ predicted_value }};  // Predicted value for tomorrow
+            var dates = {{ dates|tojson }};  // Current dates from DB
+            var totals = {{ totals|tojson }};  // Actual totals from DB
+
             var chart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -100,6 +105,18 @@
                         backgroundColor: 'rgba(255, 0, 0, 0.1)',
                         fill: false,
                         borderDash: [5, 5]  // Dashed line for target
+                    },
+
+                    {
+                        label: 'AI Prediction for Tomorrow',
+                        data: Array({{ dates|tojson }}).fill(predictedValue),  // Target line,  // Null until "Tomorrow", then show predicted value
+                        borderColor: 'green',
+                        backgroundColor: 'rgba(0, 255, 0, 0.5)',  // Slightly transparent green
+                        fill: false,
+                        pointBackgroundColor: 'green',  // Green dot
+                        pointBorderColor: 'green',  // Green border
+                        pointRadius: 6,  // Larger dot size for emphasis
+                        showLine: false  // Only show the point, not a line
                     }]
                 },
                 options: {
@@ -107,6 +124,24 @@
                     scales: {
                         y: {
                             beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                usePointStyle: true  // Use point style for better visibility
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataset.label === 'AI Prediction for Tomorrow') {
+                                        return 'Predicted: ' + context.raw;
+                                    }
+                                    return context.dataset.label + ': ' + context.raw;
+                                }
+                            }
                         }
                     }
                 }
