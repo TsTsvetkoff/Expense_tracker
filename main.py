@@ -7,10 +7,21 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 import numpy as np
+from sqlalchemy import text
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///expenses.db'
 db = SQLAlchemy(app)
+
+
+with app.app_context():
+    try:
+        db.session.execute(
+            text('ALTER TABLE expense ADD COLUMN prediction FLOAT DEFAULT NULL')
+        )
+        db.session.commit()
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 
 class Expense(db.Model):
@@ -19,6 +30,7 @@ class Expense(db.Model):
     category = db.Column(db.String(50), nullable=False)
     comment = db.Column(db.String(200), nullable=True)
     amount = db.Column(db.Float, nullable=False)
+    prediction = db.Column(db.Float)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -44,14 +56,6 @@ def predict_next_day_expense():
         df = pd.DataFrame(expenses, columns=['date', 'amount'])
 
         min_date = df['date'].min()
-        # Convert the 'date' column back to datetime
-        df['date'] = pd.to_datetime(df['date'], unit='D')
-
-        # Calculate the timedelta
-        min_date_timedelta = pd.to_timedelta(min_date.value)
-
-        # Add min_date to each element in the 'date' column
-        df['date'] = df['date'].apply(lambda x: x + min_date_timedelta)
 
         # Group by 'date' and sum 'amount'
         df_daily_totals = df.groupby(df['date'].dt.date)['amount'].sum().reset_index()
@@ -73,7 +77,6 @@ def predict_next_day_expense():
         model = LinearRegression()
         model.fit(X_train, y_train)
 
-
         # Convert the 'date' column to the number of days since the minimum date
         df_daily_totals['date'] = (df_daily_totals['date'] - df_daily_totals['date'].min())
 
@@ -87,7 +90,17 @@ def predict_next_day_expense():
         next_day = np.array(next_day).reshape(-1, 1)
         predicted_amount = model.predict(next_day)
 
-        return round(predicted_amount[0][0], 2)
+        date_to_update = df['date'].max().strftime('%Y-%m-%d %H:%M:%S')
+
+        predicted_amount = round(predicted_amount[0][0], 2)
+        db.session.execute(
+            text(
+                'UPDATE expense SET prediction = :predicted_amount WHERE strftime("%Y-%m-%d %H:%M:%S", date) = :date_to_update'),
+            {'predicted_amount': predicted_amount, 'date_to_update': date_to_update}
+        )
+        db.session.commit()
+
+        return round(predicted_amount)
 
 
 @app.route('/data')
@@ -132,13 +145,45 @@ def expenses_per_day():
     if not expenses_per_day:
         dates = []
         totals = []
+        predictions = []
     else:
         dates = [expense.date for expense in expenses_per_day]
         totals = [expense.total if expense.total else 0 for expense in expenses_per_day]
+        predictions = [get_last_prediction_of_day(date) for date in dates]  # Get predictions
 
     predicted_value = predict_next_day_expense()
 
-    return render_template('expenses_per_day.html', expenses_per_day=expenses_per_day, dates=dates, totals=totals, predicted_value=predicted_value)
+    return render_template(
+        'expenses_per_day.html',
+        expenses_per_day=expenses_per_day,
+        dates=dates,
+        totals=totals,
+        predictions=predictions,  # Pass predictions as a list
+        predicted_value=predicted_value
+    )
+
+
+def get_last_prediction_of_day(day):
+    # Convert the string date to a datetime object
+    day_datetime = datetime.strptime(day, '%Y-%m-%d')
+
+    # Convert the date to a datetime object at the start of the day
+    start_of_day = datetime.combine(day_datetime.date(), datetime.min.time())
+
+    # Convert the date to a datetime object at the end of the day
+    end_of_day = datetime.combine(day_datetime.date(), datetime.max.time())
+
+    # Query the database for expenses on the given day, ordered by date and time (from newest to oldest)
+    expenses_of_day = db.session.query(Expense).filter(
+        Expense.date >= start_of_day,
+        Expense.date <= end_of_day
+    ).order_by(Expense.date.desc())
+
+    # Get the first entry (i.e., the last prediction of the day)
+    last_expense_of_day = expenses_of_day.first()
+
+    # Return the prediction value of the last expense of the day
+    return last_expense_of_day.prediction if last_expense_of_day else None
 
 
 @app.route('/expenses_per_month')

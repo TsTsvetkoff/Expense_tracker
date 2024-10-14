@@ -88,96 +88,97 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- JavaScript to handle predictions and charts -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Existing chart setup logic
-            var ctx = document.getElementById('myChart').getContext('2d');
-            var predictedValue = {{ predicted_value }};  // Predicted value for tomorrow
-            var dates = {{ dates|tojson }};  // Current dates from DB
-            var totals = {{ totals|tojson }};  // Actual totals from DB
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Existing chart setup logic
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var predictedValue = {{ predicted_value }};  // Predicted value for tomorrow
+        var dates = {{ dates|tojson }};  // Current dates from DB
+        var totals = {{ totals|tojson }};  // Actual totals from DB
 
-            var chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: {{ dates|tojson }},
-                    datasets: [{
-                        label: 'Total Expenses',
-                        data: {{ totals|tojson }},
-                        borderColor: 'blue',
-                        backgroundColor: 'rgba(0, 0, 255, 0.1)',
-                        fill: true
-                    },
-                    {
-                        label: 'Daily Target (100)',
-                        data: Array({{ totals|length }}).fill(100),  // Target line
-                        borderColor: 'red',
-                        backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                        fill: false,
-                        borderDash: [5, 5]  // Dashed line for target
-                    },
-                    {
-                        label: 'AI Prediction for Tomorrow',
-                        data: Array({{ dates|tojson }}).fill(predictedValue),  // Null until "Tomorrow", then show predicted value
-                        borderColor: 'green',
-                        backgroundColor: 'rgba(0, 255, 0, 0.5)',  // Slightly transparent green
-                        fill: false,
-                        pointBackgroundColor: 'green',  // Green dot
-                        pointBorderColor: 'green',  // Green border
-                        pointRadius: 6,  // Larger dot size for emphasis
-                        showLine: false  // Only show the point, not a line
-                    }]
+        // AI predictions for each day
+        var predictions = {{ predictions | tojson }};  // AI predictions for each day
+
+        var chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Total Expenses',
+                    data: totals,
+                    borderColor: 'blue',
+                    backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                    fill: true
                 },
-                options: {
-                    responsive: true,  // Enable responsive behavior
-                    maintainAspectRatio: false,  // Disable aspect ratio to manage chart height on mobile
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) { return value; }, // Display numbers in better format
+                {
+                    label: 'Daily Target (100)',
+                    data: Array(dates.length).fill(100),  // Target line
+                    borderColor: 'red',
+                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                    fill: false,
+                    borderDash: [5, 5]  // Dashed line for target
+                },
+                {
+                    label: 'AI Predictions Per Day',  // New dataset for AI predictions
+                    data: predictions,  // Use the predictions array
+                    borderColor: 'green',
+                    backgroundColor: 'rgba(0, 255, 0, 0.1)',  // Slightly transparent green
+                    fill: false,
+                    borderWidth: 2,  // Green line width for predictions
+                    pointBackgroundColor: 'green',  // Green dots for each prediction
+                    pointBorderColor: 'green',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,  // Enable responsive behavior
+                maintainAspectRatio: false,  // Disable aspect ratio to manage chart height on mobile
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) { return value; }, // Display numbers in better format
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            usePointStyle: true,  // Use point style for better visibility
+                            font: {
+                                size: 12  // Adjust font size for mobile
                             }
                         }
                     },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            labels: {
-                                usePointStyle: true,  // Use point style for better visibility
-                                font: {
-                                    size: 12  // Adjust font size for mobile
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                if (context.dataset.label === 'AI Prediction for Tomorrow') {
+                                    return 'Predicted: ' + context.raw;
                                 }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    if (context.dataset.label === 'AI Prediction for Tomorrow') {
-                                        return 'Predicted: ' + context.raw;
-                                    }
-                                    return context.dataset.label + ': ' + context.raw;
-                                }
+                                return context.dataset.label + ': ' + context.raw;
                             }
                         }
                     }
                 }
-            });
-
-            // Predictions JavaScript Logic
-            const predictions = {{ predictions | tojson }};
-
-            // Get all the cells where the predictions will be placed
-            const predictionCells = document.querySelectorAll('.ai-prediction');
-
-            // Loop through the prediction cells and fill them with the prediction data
-            predictionCells.forEach((cell, index) => {
-                if (predictions[index] !== null) {
-                    cell.textContent = predictions[index];  // Add the prediction value
-                } else {
-                    cell.textContent = 'No Prediction';  // Default value if prediction is missing
-                }
-            });
+            }
         });
-    </script>
+
+        // Predictions JavaScript Logic
+        const predictionCells = document.querySelectorAll('.ai-prediction');
+
+        // Loop through the prediction cells and fill them with the prediction data
+        predictionCells.forEach((cell, index) => {
+            if (predictions[index] !== null) {
+                cell.textContent = predictions[index];  // Add the prediction value
+            } else {
+                cell.textContent = 'No Prediction';  // Default value if prediction is missing
+            }
+        });
+    });
+</script>
+
 
 </body>
 </html>
